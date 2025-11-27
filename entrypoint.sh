@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Start FastAPI in the background
-# We bind to 0.0.0.0:8000 so it's accessible internally
-uvicorn src.api:app --host 0.0.0.0 --port 8000 &
+# We bind to 127.0.0.1 so it's accessible internally but NOT exposed to Render
+uvicorn src.api:app --host 127.0.0.1 --port 8000 &
 
 # Wait for API to start (optional but good practice)
 sleep 5
