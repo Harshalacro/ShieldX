@@ -29,7 +29,7 @@ if __name__ == "__main__":
     train_specific_model("credit", "data/credit_card.csv", ['amount', 'category', 'card_type'])
     
     # UPI
-    train_specific_model("upi", "data/upi.csv", ['amount', 'app'])
+    train_specific_model("upi", "data/upi.csv", ['amount', 'app', 'receiver_vpa'])
     
     # Crypto
     train_specific_model("crypto", "data/crypto.csv", ['amount', 'currency'])

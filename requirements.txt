@@ -8,3 +8,5 @@ streamlit
 plotly
 requests
 joblib
+azure-storage-blob
+python-dotenv

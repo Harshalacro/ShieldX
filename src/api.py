@@ -8,15 +8,40 @@ from typing import Optional
 app = FastAPI(title="ShieldX Fraud Detection API")
 
 # Load models
+# Load models
+import os
+from azure_utils import download_blob_to_file
+
 models = {}
+model_files = {
+    'credit': 'credit_model.joblib',
+    'upi': 'upi_model.joblib',
+    'crypto': 'crypto_model.joblib',
+    'url': 'url_detection_model.joblib'
+}
+
+def load_model(key, filename):
+    local_path = f"models/{filename}"
+    
+    # Try downloading from Azure if configured
+    if os.getenv('AZURE_STORAGE_CONNECTION_STRING'):
+        print(f"Attempting to download {filename} from Azure...")
+        if download_blob_to_file("models", filename, local_path):
+            print(f"Downloaded {filename} from Azure.")
+    
+    # Load from local path (whether it was there or just downloaded)
+    try:
+        return joblib.load(local_path)
+    except Exception as e:
+        print(f"Failed to load {filename}: {e}")
+        return None
+
 try:
-    models['credit'] = joblib.load("models/credit_model.joblib")
-    models['upi'] = joblib.load("models/upi_model.joblib")
-    models['crypto'] = joblib.load("models/crypto_model.joblib")
-    models['url'] = joblib.load("models/url_detection_model.joblib")
-    print("All models loaded successfully.")
+    for key, filename in model_files.items():
+        models[key] = load_model(key, filename)
+    print("Model loading complete.")
 except Exception as e:
-    print(f"Error loading models: {e}")
+    print(f"Error initializing models: {e}")
 
 class Transaction(BaseModel):
     type: str # credit, upi, crypto
@@ -24,6 +49,7 @@ class Transaction(BaseModel):
     category: Optional[str] = None
     card_type: Optional[str] = None
     app: Optional[str] = None
+    receiver_vpa: Optional[str] = None
     currency: Optional[str] = None
 
 class UrlCheck(BaseModel):
@@ -56,6 +82,7 @@ def predict(tx: Transaction):
         data['card_type'] = [tx.card_type]
     elif tx.type == 'upi':
         data['app'] = [tx.app]
+        data['receiver_vpa'] = [tx.receiver_vpa]
     elif tx.type == 'crypto':
         data['currency'] = [tx.currency]
         

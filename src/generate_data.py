@@ -60,16 +60,28 @@ def generate_credit_card_data(num=5000):
 def generate_upi_data(num=5000):
     print(f"Generating {num} UPI transactions...")
     data = []
+    
+    suspicious_vpas = ['fraud@upi', 'scam@bank', 'hacker@pay', 'malware@axis', 'phishing@okhdfcbank']
+    safe_vpas = [fake.email() for _ in range(50)] # Limited pool of safe VPAs for the model to learn "normalcy" vs "anomaly"
+    
     for _ in range(num):
         is_fraud = 0
         amount = round(random.uniform(1, 1000), 2)
-        if random.random() < 0.05: is_fraud = 1
+        
+        # Higher fraud chance if we pick a suspicious VPA later
+        if random.random() < 0.05: 
+            is_fraud = 1
+            
+        if is_fraud and random.random() < 0.8:
+            receiver_vpa = random.choice(suspicious_vpas)
+        else:
+            receiver_vpa = random.choice(safe_vpas)
         
         data.append({
             'timestamp': fake.date_time_this_year().isoformat(),
             'amount': amount,
             'app': random.choice(['GPay', 'PhonePe', 'Paytm']),
-            'receiver_vpa': fake.email(), # Simulating VPA
+            'receiver_vpa': receiver_vpa,
             'is_fraud': is_fraud
         })
     return pd.DataFrame(data)

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <h3>🛡️ ShieldX Scanner</h3>
+
+    <div class="container">
+        <button id="scanBtn">Scan Current Page</button>
+
+        <div id="result" class="result-box" style="display:none;"></div>
+
+        <div class="toggle-container">
+            <span>Auto-Scan Pages</span>
+            <label class="switch">
+                <input type="checkbox" id="autoScanToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <button id="settingsBtn">⚙️ Settings</button>
+
+        <div id="settingsPanel" class="input-group">
+            <label for="apiUrl">API URL:</label>
+            <input type="text" id="apiUrl" placeholder="https://your-app.azurewebsites.net">
+            <button id="saveBtn">Save</button>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

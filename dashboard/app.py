@@ -9,12 +9,36 @@ st.title("🛡️ ShieldX - Multi-Domain Fraud Detection")
 # Load Datasets
 @st.cache_data
 def load_data():
-    return {
-        'credit': pd.read_csv("data/credit_card.csv"),
-        'upi': pd.read_csv("data/upi.csv"),
-        'crypto': pd.read_csv("data/crypto.csv"),
-        'urls': pd.read_csv("data/urls.csv")
+    import os
+    import sys
+    # Add src to python path to import azure_utils if needed, or just duplicate simple logic
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+    from azure_utils import download_blob_to_file
+    
+    data_files = {
+        'credit': 'credit_card.csv',
+        'upi': 'upi.csv',
+        'crypto': 'crypto.csv',
+        'urls': 'urls.csv'
     }
+    
+    loaded_data = {}
+    
+    for key, filename in data_files.items():
+        local_path = f"data/{filename}"
+        
+        # Try downloading from Azure if configured
+        if os.getenv('AZURE_STORAGE_CONNECTION_STRING'):
+             download_blob_to_file("data", filename, local_path)
+             
+        # Load
+        try:
+            loaded_data[key] = pd.read_csv(local_path)
+        except Exception:
+            # Fallback for demo if file doesn't exist
+            loaded_data[key] = pd.DataFrame()
+            
+    return loaded_data
 
 data = load_data()
 
@@ -109,12 +133,13 @@ with tab5:
         payload['card_type'] = st.selectbox("Card Type", ['Visa', 'MasterCard', 'Amex'])
     elif type_ == "upi":
         payload['app'] = st.selectbox("App", ['GPay', 'PhonePe', 'Paytm'])
+        payload['receiver_vpa'] = st.text_input("Receiver ID / VPA", value="example@upi")
     elif type_ == "crypto":
         payload['currency'] = st.selectbox("Currency", ['BTC', 'ETH', 'SOL'])
         
     if st.button("Predict"):
         try:
-            res = requests.post("http://localhost:8000/predict", json=payload)
+            res = requests.post("http://localhost:8001/predict", json=payload)
             if res.status_code == 200:
                 result = res.json()
                 if result['is_fraud']:
