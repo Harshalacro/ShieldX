@@ -1,74 +1,82 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    const scanBtn = document.getElementById('scanBtn');
-    const resultBox = document.getElementById('result');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const settingsPanel = document.getElementById('settingsPanel');
-    const saveBtn = document.getElementById('saveBtn');
-    const apiUrlInput = document.getElementById('apiUrl');
-    const autoScanToggle = document.getElementById('autoScanToggle');
+document.addEventListener('DOMContentLoaded', function () {
+    const scanBtn = document.getElementById('scan-btn');
+    const resultArea = document.getElementById('result-area');
+    const statusIcon = resultArea.querySelector('.status-icon');
+    const statusText = resultArea.querySelector('.status-text');
+    const scoreText = document.getElementById('score-text');
+    const errorMsg = document.getElementById('error-msg');
+    const currentUrlDisplay = document.getElementById('current-url');
 
-    // Load settings
-    const data = await chrome.storage.sync.get(['apiUrl', 'autoScan']);
-    if (data.apiUrl) apiUrlInput.value = data.apiUrl;
-    if (data.autoScan) autoScanToggle.checked = data.autoScan;
+    // get current api url - hardcoded for now, but could be dynamic
+    const API_URL = "https://shieldx-1.onrender.com/predict/url";
 
-    // Toggle Settings Panel
-    settingsBtn.addEventListener('click', () => {
-        settingsPanel.style.display = settingsPanel.style.display === 'flex' ? 'none' : 'flex';
-    });
-
-    // Save Settings
-    saveBtn.addEventListener('click', () => {
-        const url = apiUrlInput.value.trim();
-        if (url) {
-            chrome.storage.sync.set({ apiUrl: url }, () => {
-                alert('Settings saved!');
-                settingsPanel.style.display = 'none';
-            });
-        }
-    });
-
-    // Toggle Auto-Scan
-    autoScanToggle.addEventListener('change', (e) => {
-        chrome.storage.sync.set({ autoScan: e.target.checked });
-    });
-
-    // Scan Button Logic
     scanBtn.addEventListener('click', async () => {
-        const { apiUrl } = await chrome.storage.sync.get('apiUrl');
-        if (!apiUrl) {
-            showResult('Please set API URL in Settings', 'danger');
-            return;
-        }
-
-        let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tab) return;
-
-        showResult('Scanning...', '');
+        // UI Reset
+        scanBtn.disabled = true;
+        scanBtn.textContent = "Analyzing...";
+        errorMsg.style.display = 'none';
+        resultArea.className = 'status-box'; // reset classes
+        statusIcon.textContent = '⏳';
+        statusText.textContent = "Checking AI Models...";
+        scoreText.textContent = "";
 
         try {
-            const response = await fetch(`${apiUrl}/predict`, {
+            // 1. Get current tab URL
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab || !tab.url) {
+                throw new Error("Cannot access tab URL.");
+            }
+
+            const urlToCheck = tab.url;
+            currentUrlDisplay.textContent = urlToCheck;
+            // currentUrlDisplay.style.display = 'block';
+
+            // 2. Call ShieldX API
+            const response = await fetch(API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: "url", data: tab.url })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: urlToCheck })
             });
 
-            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
 
-            // Assuming API returns { prediction: "Phishing" | "Safe" }
-            const isSafe = result.prediction.toLowerCase() === 'safe';
-            showResult(result.prediction, isSafe ? 'safe' : 'danger');
+            const data = await response.json();
+
+            // 3. Update UI based on result
+            // API returns: { "is_phishing": bool, "probability": float, "action": str }
+
+            const probPercent = (data.probability * 100).toFixed(1);
+
+            if (data.is_phishing) {
+                resultArea.classList.add('phishing');
+                statusIcon.textContent = '⛔';
+                statusText.textContent = "PHISHING DETECTED!";
+                scoreText.textContent = `Confidence: ${probPercent}% (Risk High)`;
+            } else if (data.probability > 0.4) {
+                resultArea.classList.add('suspicious');
+                statusIcon.textContent = '⚠️';
+                statusText.textContent = "Suspicious";
+                scoreText.textContent = `Risk Score: ${probPercent}% (Be Careful)`;
+            } else {
+                resultArea.classList.add('safe');
+                statusIcon.textContent = '✅';
+                statusText.textContent = "Safe Website";
+                scoreText.textContent = `Safety Score: ${(100 - probPercent).toFixed(1)}%`;
+            }
 
         } catch (error) {
             console.error(error);
-            showResult('Error connecting to server', 'danger');
+            errorMsg.textContent = error.message;
+            errorMsg.style.display = 'block';
+            statusIcon.textContent = '❌';
+            statusText.textContent = "Error";
+        } finally {
+            scanBtn.disabled = false;
+            scanBtn.textContent = "Scan Page";
         }
     });
-
-    function showResult(text, className) {
-        resultBox.style.display = 'flex';
-        resultBox.innerText = text;
-        resultBox.className = 'result-box'; // Reset
-        if (className) resultBox.classList.add(className);
-    }
 });

@@ -1,75 +1,47 @@
-# 🚀 ShieldX: Clean Deployment Guide (Azure Cloud Shell)
+# ⚡ One-Click Azure Deployment
 
-This guide is a **fresh start**. We will use the **"Code Deploy"** method.
-This method **skips Docker builds** entirely, which fixes the `TasksOperationsNotAllowed` error you faced.
+We have created an automated script to handle the deployment for you, avoiding all the Azure Portal glitches.
 
----
+## Prerequisites
+1.  **Azure Connection String**: You should have this from the Storage Account setup you already did.
+2.  **Azure CLI**: You already checked this is installed.
 
-## Step 1: Prepare Cloud Shell
-1.  Open the **Azure Cloud Shell** (top right `>_` icon in Azure Portal).
-2.  Run these commands to clean up any old files and get a fresh copy of your code:
+## How to Deploy
 
-    ```bash
-    cd ~
-    rm -rf ShieldX
-    git clone https://github.com/YOUR_GITHUB_USERNAME/ShieldX.git
-    cd ShieldX
+1.  **Open Terminal** in this project folder.
+2.  **Run the script**:
+    ```powershell
+    ./deploy_azure.ps1
     ```
-    *(Replace `YOUR_GITHUB_USERNAME` with your actual GitHub username)*
+3.  **Follow the prompts**:
+    *   It will ask you to Login (if not already).
+    *   Enter a **Unique App Name** (e.g., `shieldx-beta-harshal`).
+    *   Paste your **Connection String**.
+
+**That's it!** The script will:
+*   Create the App Service (correctly configured as Code, not Container).
+*   Upload and build your code.
+*   Set your Connection String automatically.
+*   Give you the final URL.
 
 ---
 
-## Step 2: Check Available Python Versions
-Azure changes supported versions often. Let's see what is available for you.
+## Alternative: Manual Commands (Azure CLI)
 
-1.  Run this command:
+If you prefer to run the commands yourself (or if PowerShell is giving you trouble), just run these 3 lines in your terminal one by one:
+
+1.  **Login**:
     ```bash
-    az webapp list-runtimes --os linux --output table | grep PYTHON
-    ```
-2.  Look for the latest supported version (e.g., `PYTHON:3.10` or `PYTHON:3.11`).
-    *   *We will use `PYTHON:3.10` in the next step, but if you see 3.11 is available, you can use that too.*
-
----
-
-## Step 3: Deploy the App
-We will create a **NEW** resource group and app to avoid any conflicts with the old errors.
-
-1.  Run this command (it does everything in one go):
-    ```bash
-    az webapp up --name shieldx-final-app --resource-group ShieldX_Clean_RG --sku B1 --os-type Linux --runtime "PYTHON:3.10"
-    ```
-    *   **Note:** If `shieldx-final-app` is taken, change it to something unique like `shieldx-final-yourname`.
-    *   **Note:** If it complains about the runtime, use the exact string you found in Step 2 (e.g., `PYTHON|3.10`).
-
-    *Wait for this to finish. It might take 2-3 minutes.*
-
----
-
-## Step 4: Configure Startup
-Once the app is created, we need to tell it how to start (run both API and Dashboard).
-
-1.  Run this command:
-    ```bash
-    az webapp config set --name shieldx-final-app --resource-group ShieldX_Clean_RG --startup-file "sh entrypoint.sh"
-    ```
-    *(Make sure to use the same app name you used in Step 3!)*
-
----
-
-## Step 5: Verify
-1.  Go to your URL: `http://shieldx-final-app.azurewebsites.net`
-    *(Or whatever name you chose)*
-2.  It might take 1-2 minutes to start up. If you see "Application Error", wait a bit and refresh.
-
----
-
-## 🛑 Troubleshooting
-*   **"Runtime not supported":** Make sure you ran Step 2 and picked a valid version from the list.
-*   **"Resource group exists":** We used `ShieldX_Clean_RG` to be safe.
-*   **"MSI token audience" / "Credential problem":**
-    This is a Cloud Shell glitch. Run these commands to refresh your session:
-    ```bash
-    az logout
     az login
     ```
-    Then run the `az webapp up` command again.
+2.  **Create & Deploy** (Replace `unique-app-name` with your own name):
+    ```bash
+    az webapp up --runtime PYTHON:3.10 --sku F1 --resource-group ShieldX-RG --name unique-app-name
+    ```
+3.  **Set Connection String**:
+    ```bash
+    az webapp config appsettings set --name unique-app-name --resource-group ShieldX-RG --settings AZURE_STORAGE_CONNECTION_STRING="<PASTE_YOUR_CONNECTION_STRING_HERE>"
+    ```
+
+---
+*Note: If `deploy_azure.ps1` gives a security error, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first.*

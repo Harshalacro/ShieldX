@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 import pandas as pd
@@ -6,6 +7,15 @@ import uvicorn
 from typing import Optional
 
 app = FastAPI(title="ShieldX Fraud Detection API")
+
+# Allow all origins for extension access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load models
 # Load models

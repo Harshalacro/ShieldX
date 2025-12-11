@@ -8,6 +8,30 @@ This guide explains how to deploy the **ShieldX AI Security Platform** to variou
 
 ---
 
+## Option 1: The "Magic Command" (Fast Track) ⚡
+
+**Stop fighting the Azure Portal menus!** You can deploy everything with just two commands in your VS Code terminal.
+
+1.  **Login**:
+    ```bash
+    az login
+    ```
+    (A browser window will open. Sign in with your student account).
+
+2.  **Deploy**:
+    Run this command and wait ~5 minutes. It will create the App, build the code, and launch it automatically.
+    ```bash
+    az webapp up --runtime PYTHON:3.10 --sku F1 --resource-group ShieldX-RG
+    ```
+
+3.  **Done!** It will verify the URL for you.
+
+---
+
+## Option 2: Azure Portal (Manual Method)
+
+If Option 1 fails or you prefer clicking buttons...
+
 ## Option 1: Google Cloud Run (Recommended for Scalability)
 Google Cloud Run is a serverless platform that automatically scales your containers.
 
