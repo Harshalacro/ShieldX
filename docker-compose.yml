@@ -21,7 +21,7 @@ services:
     depends_on:
       - api
     environment:
-      - API_URL=http://api:8000/stats
+      - API_URL=http://api:8000
 
   simulator:
     build: .

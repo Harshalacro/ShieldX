@@ -139,12 +139,14 @@ with tab5:
         
     if st.button("Predict"):
         try:
-            res = requests.post("http://localhost:8001/predict", json=payload)
+            # Use API_URL env var (for Render) or default to localhost:8000
+            api_url = os.getenv("API_URL", "http://localhost:8000")
+            res = requests.post(f"{api_url}/predict", json=payload)
             if res.status_code == 200:
                 result = res.json()
                 if result['is_fraud']:
                     st.error(f"FRAUD DETECTED! ({result['fraud_probability']:.2f})")
                 else:
                     st.success(f"SAFE ({result['fraud_probability']:.2f})")
-        except:
-            st.error("API Error")
+        except Exception as e:
+            st.error(f"API Error: {e}")
